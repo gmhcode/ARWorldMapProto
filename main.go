@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 )
@@ -21,15 +22,16 @@ func handleRequest() {
 }
 
 func main() {
+	fmt.Println("Starting server")
 	handleRequest()
 
-	// defer db.Close()
 }
 
 var err error
-var arMap WorldMapWrapper
 
+//ArWorldPost - Gets the AR world map from the ios device
 func ArWorldPost(w http.ResponseWriter, r *http.Request) {
+	var arMap WorldMapWrapper
 	fmt.Println("Hit")
 	if err != nil {
 		panic("Error in NewUser")
@@ -48,13 +50,48 @@ func ArWorldPost(w http.ResponseWriter, r *http.Request) {
 	println("bytes", len(b))
 	fmt.Println(len(arMap.WorldMap))
 
+	WriteToFile(arMap)
+
 }
 
+// ArWorldGet - Sends ARMap to iOS Device
 func ArWorldGet(w http.ResponseWriter, r *http.Request) {
-	// w http.ResponseWriter, r *http.Request
-	// print
 	println("Map get Hit")
-	b := []byte(arMap.WorldMap)
-	println("bytes", len(b))
+	var arMap WorldMapWrapper
+
+	decodeJSONConfig(&arMap, "mapFile.json")
+
 	json.NewEncoder(w).Encode(arMap)
+}
+
+// WriteToFile - puts json into the file
+func WriteToFile(arMap WorldMapWrapper) {
+	f, err := os.Create("mapFile.json")
+	PrintFatalError(err)
+	defer f.Close()
+
+	err = json.NewEncoder(f).Encode(&arMap)
+
+	PrintFatalError(err)
+
+}
+
+// decodeJSONConfig - takes Data from the json file
+func decodeJSONConfig(v interface{}, filename string) {
+
+	fmt.Println("Decoding JSON")
+	file, err := os.Open(filename)
+	PrintFatalError(err)
+	if err != nil {
+		// return v, err
+	}
+	err = json.NewDecoder(file).Decode(&v)
+	PrintFatalError(err)
+}
+
+// PrintFatalError - Prints an error
+func PrintFatalError(err error) {
+	if err != nil {
+		log.Fatal("Error happened while processing file", err)
+	}
 }
